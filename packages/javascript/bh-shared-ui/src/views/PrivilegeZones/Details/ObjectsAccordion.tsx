@@ -24,22 +24,28 @@ import { InfiniteQueryFixedList, InfiniteQueryFixedListProps } from '../../../co
 import NodeIcon from '../../../components/NodeIcon';
 import { useRuleMembersInfiniteQuery, useTagMembersInfiniteQuery } from '../../../hooks/useAssetGroupTags';
 import { useEnvironmentIdList } from '../../../hooks/useEnvironmentIdList';
-import { usePZQueryParams } from '../../../hooks/usePZParams';
-import { usePZPathParams } from '../../../hooks/usePZParams/usePZPathParams';
 import { ENVIRONMENT_AGGREGATION_SUPPORTED_ROUTES } from '../../../routes';
 import { SortOrder } from '../../../types';
-import { cn, useAppNavigate } from '../../../utils';
-import { ObjectTabValue } from '../utils';
-import { useSelectedDetailsTabsContext } from './SelectedDetailsTabs/SelectedDetailsTabsContext';
+import { cn } from '../../../utils';
 import { SelectedHighlight } from './SelectedHighlight';
 
-export interface ObjectListsProps {
+export interface ObjectsAccordionProps {
     kindCounts: Record<string, number>;
     totalCount: number;
-    onObjectClick?: (object: AssetGroupTagMemberListItem) => void;
+    tagId: string;
+    ruleId?: string;
+    objectId?: string;
+    onObjectClick: (object: AssetGroupTagMemberListItem) => void;
 }
 
-export const ObjectsAccordion: React.FC<ObjectListsProps> = ({ kindCounts, totalCount, onObjectClick }) => {
+export const ObjectsAccordion: React.FC<ObjectsAccordionProps> = ({
+    ruleId,
+    tagId,
+    objectId,
+    kindCounts,
+    totalCount,
+    onObjectClick,
+}) => {
     const [openAccordion, setOpenAccordion] = useState('');
 
     return (
@@ -63,6 +69,9 @@ export const ObjectsAccordion: React.FC<ObjectListsProps> = ({ kindCounts, total
                             key={kind}
                             kind={kind}
                             count={count}
+                            tagId={tagId}
+                            ruleId={ruleId}
+                            objectId={objectId}
                             isOpen={kind === openAccordion}
                             onOpen={setOpenAccordion}
                             onObjectClick={onObjectClick}
@@ -77,8 +86,11 @@ interface ObjectAccordionItemProps {
     kind: string;
     count: number;
     isOpen: boolean;
+    tagId: string;
+    ruleId?: string;
+    objectId?: string;
     onOpen: React.Dispatch<React.SetStateAction<string>>;
-    onObjectClick?: (object: AssetGroupTagMemberListItem) => void;
+    onObjectClick: (object: AssetGroupTagMemberListItem) => void;
 }
 
 const LoadingRow = (_: number, style: React.CSSProperties) => (
@@ -90,34 +102,23 @@ const LoadingRow = (_: number, style: React.CSSProperties) => (
     </div>
 );
 
-const ObjectAccordionItem: React.FC<ObjectAccordionItemProps> = ({ kind, count, isOpen, onOpen, onObjectClick }) => {
+const ObjectAccordionItem: React.FC<ObjectAccordionItemProps> = ({
+    kind,
+    count,
+    tagId,
+    ruleId,
+    objectId,
+    isOpen,
+    onOpen,
+    onObjectClick,
+}) => {
     const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-
-    const navigate = useAppNavigate();
-
-    const { ruleId, memberId, tagId: tagIdPathParam, objectDetailsLink } = usePZPathParams();
-    // pull in query params
-    // default use path params, fallback to query params
-    const { assetGroupTagId: tagIdQueryParam } = usePZQueryParams();
-
-    const tagId = (tagIdPathParam || tagIdQueryParam?.toString()) ?? '';
-    const { setSelectedDetailsTab } = useSelectedDetailsTabsContext();
 
     const environments = useEnvironmentIdList(ENVIRONMENT_AGGREGATION_SUPPORTED_ROUTES, false);
 
     const ruleMembersQuery = useRuleMembersInfiniteQuery(tagId, ruleId, sortOrder, environments, kind, isOpen);
     const tagMembersQuery = useTagMembersInfiniteQuery(tagId, sortOrder, environments, kind, isOpen);
 
-    const handleClick = (item: AssetGroupTagMemberListItem) => {
-        // if on Attack Path Page => navigate to Explore Page
-        if (onObjectClick) {
-            onObjectClick(item);
-        } else {
-            // Update State for Selected Details Tab
-            setSelectedDetailsTab(ObjectTabValue);
-            navigate(objectDetailsLink(tagId, item.id, ruleId));
-        }
-    };
     const Row: InfiniteQueryFixedListProps<AssetGroupTagMemberListItem>['renderRow'] = (item, index, style) => {
         return (
             <Tooltip
@@ -127,7 +128,7 @@ const ObjectAccordionItem: React.FC<ObjectAccordionItemProps> = ({ kind, count, 
                     key={index}
                     role='listitem'
                     className={cn('border-y border-neutral-3 relative', {
-                        'bg-neutral-4': memberId === item.id.toString(),
+                        'bg-neutral-4': objectId === item.id.toString(),
                     })}
                     style={style}>
                     <SelectedHighlight itemId={item.id} type='member' />
@@ -135,7 +136,7 @@ const ObjectAccordionItem: React.FC<ObjectAccordionItemProps> = ({ kind, count, 
                         variant='text'
                         className='w-full block text-left truncate'
                         onClick={() => {
-                            handleClick(item);
+                            onObjectClick(item);
                         }}>
                         <span className='pl-6 text-base text-contrast ml-2'>{item.name}</span>
                     </Button>

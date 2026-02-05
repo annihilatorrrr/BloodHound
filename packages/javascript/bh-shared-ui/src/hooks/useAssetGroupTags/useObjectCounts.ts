@@ -20,11 +20,7 @@ import { apiClient } from '../../utils/api';
 import { useEnvironmentIdList } from '../useEnvironmentIdList';
 import { usePZPathParams } from '../usePZParams/usePZPathParams';
 
-export const useTagObjectCounts = (
-    tagId: string | undefined,
-    ruleId: string | undefined,
-    environments: string[] | undefined
-) =>
+export const useTagObjectCounts = (tagId: string | undefined, ruleId: string | undefined, environments: string[]) =>
     useQuery({
         queryKey: ['asset-group-tags-count', tagId, ...(environments ?? [])],
         queryFn: async ({ signal }) => {
@@ -32,7 +28,7 @@ export const useTagObjectCounts = (
 
             return apiClient.getAssetGroupTagMembersCount(tagId, environments, { signal }).then((res) => res.data.data);
         },
-        enabled: !!tagId && !ruleId && !!environments,
+        enabled: !!tagId && !ruleId,
     });
 
 const useRuleObjectCounts = (tagId: string | undefined, ruleId: string | undefined, environments: string[]) =>
