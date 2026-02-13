@@ -82,6 +82,10 @@ func Entrypoint(ctx context.Context, cfg config.Configuration, connections boots
 
 	dogtagsService := dogtags.NewDefaultService()
 
+	slog.InfoContext(ctx, "DogTags provider initialized",
+		slog.String("namespace", "dogtags"),
+		slog.String("provider", dogtagsService.ProviderName()))
+
 	flags := dogtagsService.GetAllDogTags()
 	slog.InfoContext(ctx, "DogTags Configuration",
 		slog.String("namespace", "dogtags"),
@@ -128,7 +132,7 @@ func Entrypoint(ctx context.Context, cfg config.Configuration, connections boots
 			datapipeDaemon         = datapipe.NewDaemon(pipeline, startDelay, time.Duration(cfg.DatapipeInterval)*time.Second, connections.RDMS)
 			routerInst             = router.NewRouter(cfg, authorizer, fmt.Sprintf(bootstrap.ContentSecurityPolicy, "", "", "", "", "", ""))
 			authenticator          = api.NewAuthenticator(cfg, connections.RDMS, api.NewAuthExtensions(cfg, connections.RDMS))
-			openGraphSchemaService = opengraphschema.NewOpenGraphSchemaService(connections.RDMS)
+			openGraphSchemaService = opengraphschema.NewOpenGraphSchemaService(connections.RDMS, connections.Graph)
 		)
 
 		registration.RegisterFossGlobalMiddleware(&routerInst, cfg, auth.NewIdentityResolver(), authenticator, connections.RDMS)
